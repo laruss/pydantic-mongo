@@ -15,6 +15,21 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 
+class ValidationError(Exception):
+    """Exception raised for validation errors.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+    def __str__(self):
+        return f'ValidationError: {self.message}'
+
+
 class PydanticMongo(metaclass=SingletonMeta):
     def __init__(self):
         self.mongo = None

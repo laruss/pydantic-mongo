@@ -2,6 +2,10 @@
 
 PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the foundation of Pydantic and Flask-PyMongo. This allows you to leverage Pydantic's data validation and serialization capabilities, and seamlessly integrate it with MongoDB through Flask-PyMongo.
 
+## Version
+
+0.1.0
+
 ## Project Structure
 ```
 root
@@ -12,10 +16,14 @@ root
 |   |-- db_ref_model.py
 |   |-- extensions.py
 |   |-- helpers.py
+|   |-- meta.py
 |   |-- mongo_model.py
 |   |-- pm_model.py
 |-- tests
+|   |-- integration
+|   |-- unit
 |-- readme.md
+|-- requirements.txt
 |-- setup.py
 ```
 
@@ -97,6 +105,10 @@ objects = list(YourModel.objects({"field": "value"}))
 
 - `model_json_schema`: Retrieve the JSON schema of the model.
 
+- `db_ref`: Get a DBRef object for the model.
+
+- `get_ref_objects`: Get the objects referenced to an object by a DBRef.
+
 ## Easy Document References
 
 With PydanticMongo, creating references to other documents is straightforward. 
@@ -123,6 +135,47 @@ print(parent)  # _id="id", name="Sam", children=[_id="id", name="Victor"]
 
 In the database, these are represented by using bson.ObjectId linking to the `your_awesome_childs` collection.
 
+`Note:` When a Document is referred as a db_ref, it won't be loaded until it is accessed. 
+This is done to avoid circular references.
+
+## Test Coverage
+
+Made with [pytest-cov](https://pypi.org/project/pytest-cov/)
+
+```bash
+Name                              Stmts   Miss  Cover
+-----------------------------------------------------
+pydantic_mongo/__init__.py            2      0   100%
+pydantic_mongo/base.py               35      0   100%
+pydantic_mongo/base_pm_model.py     128      2    98%
+pydantic_mongo/db_ref_model.py       11      0   100%
+pydantic_mongo/extensions.py         28      1    96%
+pydantic_mongo/helpers.py            34      0   100%
+pydantic_mongo/meta.py               45      0   100%
+pydantic_mongo/mongo_model.py        73      1    99%
+pydantic_mongo/pm_model.py           38      0   100%
+-----------------------------------------------------
+TOTAL                               394      4    99%
+```
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+To run the tests, use `pytest`:
+
+```bash
+pytest ./tests/unit
+pytest ./tests/integration
+```
+
+`Note:` Integration tests require a running MongoDB instance.
+
 ## Conclusion
 
 PydanticMongo offers a powerful toolset for working with MongoDB in Flask applications, integrating seamlessly with Pydantic for data validation and serialization. Use it to simplify and structure your database-interaction code.
+
+## TODO
+
+- [ ] Check for all the available pydantic methods
+- [ ] Check for all the available mongo types
+- [ ] Add support of various DBRef types

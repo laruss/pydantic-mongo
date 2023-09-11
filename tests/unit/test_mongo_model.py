@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from typing import Optional, Dict, Union, Callable
 
 from bson import DBRef
@@ -8,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic_mongo.base import __Base as Base
 from pydantic_mongo.db_ref_model import DbRefModel
 from pydantic_mongo.mongo_model import MongoModel
-from tests.base import BaseTest
+from tests.unit.base import BaseTest
 
 
 class TestMongoModel(BaseTest):
@@ -121,14 +122,18 @@ class TestMongoModel(BaseTest):
     def test_model_dump_db(self):
         class MM(MongoModel):
             someObj: Optional[DbRefModel] = None
+            date_field: Optional[datetime.datetime] = None
+
         db_ref_obj = DbRefModel(collection="test", id="123", database="test_db")
-        mm = MM(someObj=db_ref_obj)
+        mm = MM(someObj=db_ref_obj, date_field=datetime.datetime(2022, 1, 1, 12, 0))
 
         self.assertEqual(MongoModel().model_dump_db(), {})
-        self.assertEqual(mm.model_dump_db(), {"someObj": DBRef('test', '123', 'test_db')})
+        self.assertEqual(mm.model_dump_db(),
+                         {"someObj": DBRef('test', '123', 'test_db'), "date_field": "2022-01-01T12:00:00"})
         self.assertEqual(
             mm.model_dump_db(convert_to_db=False),
-            {'someObj': {'collection': 'test', 'id': '123', 'database': 'test_db'}}
+            {'id': None, 'someObj': {'collection': 'test', 'id': '123', 'database': 'test_db'},
+             'date_field': '2022-01-01T12:00:00'}
         )
 
     def test_from_model(self):

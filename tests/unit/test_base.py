@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from pydantic_mongo import PydanticMongo
 from pydantic_mongo.base import __Base as Base
-from tests.base import BaseTest
+from tests.unit.base import BaseTest
 
 
 class TestBaseModel(BaseTest):
@@ -37,3 +39,12 @@ class TestBaseModel(BaseTest):
 
         PydanticMongo().init_app(self.app)
         self.assertEqual(Base.collection(), PydanticMongo().db["__bases"])
+
+    def test_get_type_by_collection(self):
+        with self.assertRaises(ValueError):
+            Base._get_type_by_collection("test_000123")
+
+        class Test(Base):
+            pass
+
+        self.assertEqual(Test._get_type_by_collection("tests"), Test)

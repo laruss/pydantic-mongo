@@ -3,7 +3,7 @@ from typing import Any
 
 from pydantic_mongo.base import __Base as Base
 from pydantic_mongo.db_ref_model import DbRefModel
-from tests.base import BaseTest
+from tests.unit.base import BaseTest
 
 
 class TestDbRefModel(BaseTest):

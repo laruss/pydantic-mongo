@@ -1,130 +1,86 @@
 import logging
-from typing import Dict, Any, Union, Tuple, Optional
+import re
+from typing import Callable, get_origin, Iterator, Union, Any
 
-import pymongo.database
-from bson import DBRef, ObjectId
-from pydantic.fields import FieldInfo
-
-from pydantic_mongo.base import __Base as Base
+from bson import DBRef
 
 logger = logging.getLogger(__name__)
 
-IncEx = "set[int] | set[str] | dict[int, Any] | dict[str, Any] | None | list[int] | list[str]"
 
-
-def replace_refs_with_models(data: Dict[str, Any], db: pymongo.database.Database) -> Dict[str, any]:
+def change_subtypes(t: type, callback: Callable[[type], type]) -> type:
     """
-    Replace DBRef with model data or None if not found
-    :param data: dict with data from mongo
-    :param db: pymongo database
-    :return: dict
+    Change subtypes of type t with returned from callback
+    :param t: type
+    :param callback: function that takes type and returns type
+    :return: new type
+    """
+    if hasattr(t, "__origin__"):
+        new_args = tuple(change_subtypes(arg, callback) for arg in t.__args__)
+        origin = get_origin(t)
+        return origin[new_args] if origin else t
+    else:
+        return callback(t)
+
+
+def find_instance_in_data_and_replace(data: dict, tp: type, callback: Callable[[Any], Any]) -> dict:
+    """
+    Find all instances of type in data and replace them with callback
+
+    Args:
+        data: dict with data
+        tp: type to find
+        callback: function that takes type and returns type
+
+    Returns:
+        dict with replaced types
     """
     for key, value in data.items():
-        if isinstance(value, DBRef):
-            child_data = db[value.collection].find_one({"_id": ObjectId(value.id)})
-            if not child_data:
-                logger.warning(f"Child data not found for {value}")
-                data[key] = None
-                continue
-            data[key] = replace_refs_with_models(child_data, db) if child_data else child_data
+        if isinstance(value, tp):
+            data[key] = callback(value)
         elif isinstance(value, list):
             for i, item in enumerate(value):
-                if isinstance(item, DBRef):
-                    child_data = db[item.collection].find_one({"_id": ObjectId(item.id)})
-                    data[key][i] = replace_refs_with_models(child_data, db) if child_data else child_data
+                if isinstance(item, tp):
+                    data[key][i] = callback(item)
         elif isinstance(value, dict):
-            data[key] = replace_refs_with_models(value, db)
+            data[key] = find_instance_in_data_and_replace(value, tp, callback)
 
     return data
 
 
-def replace_object_id_in_dict(data: dict) -> dict:
+def replace_word(input_str: str, target_word: str, replacement: str) -> str:
     """
-    Replace ObjectId with str in dictionary
-    :param data: dict with data
-    :return: dict with str instead of ObjectId
+    Replace full word in string
+
+    Example:
+        replace_word("hello, hello2", "hello", "world") -> "world, hello2"
+
+    Args:
+        input_str: input string
+        target_word: word to replace
+        replacement: replacement
+
+    Returns:
+        replaced string
     """
-    for key, value in data.items():
-        if isinstance(value, ObjectId):
-            data[key] = str(value)
-        elif isinstance(value, list):
-            data[key] = replace_object_id_in_list(value)
-        elif isinstance(value, dict):
-            data[key] = replace_object_id_in_dict(value)
-
-    return data
+    pattern = r'\b' + re.escape(target_word) + r'\b'
+    return re.sub(pattern, replacement, input_str)
 
 
-def replace_object_id_in_list(data: list) -> list:
+def get_refs_from_data(data: Union[dict, list, DBRef]) -> Iterator[DBRef]:
     """
-    Replace ObjectId with str in list
-    :param data: list with data
-    :return: list with str instead of ObjectId
+    Get all DBRefs from data
+
+    Args:
+        data: dict, list or DBRef
+
+    Returns:
+        iterator with DBRefs
     """
-    for i, item in enumerate(data):
-        if isinstance(item, ObjectId):
-            data[i] = str(item)
-        elif isinstance(item, list):
-            data[i] = replace_object_id_in_list(item)
-        elif isinstance(item, dict):
-            data[i] = replace_object_id_in_dict(item)
-
-    return data
-
-
-def contains_subclass_of(base_cls: type, check_cls: Union[type, FieldInfo]) -> bool:
-    """
-    Check if check_cls is subclass of base_cls
-    :param base_cls: type
-    :param check_cls: type or FieldInfo
-    :return: bool whether check_cls is subclass of base_cls
-    """
-    if isinstance(check_cls, FieldInfo):
-        return contains_subclass_of(base_cls, check_cls.annotation)
-
-    if isinstance(check_cls, type):
-        try:
-            return issubclass(check_cls, base_cls)
-        except TypeError:
-            return False
-
-    if hasattr(check_cls, "__origin__"):
-        if check_cls.__origin__ in [list, dict, set, tuple]:
-            return any(contains_subclass_of(base_cls, arg) for arg in check_cls.__args__)
-
-        if check_cls.__origin__ is Union:
-            return any(contains_subclass_of(base_cls, arg) for arg in check_cls.__args__)
-
-        return contains_subclass_of(base_cls, check_cls.__origin__)
-
-    return False
-
-
-def find_descendants_in_types(type_dict: dict[str, FieldInfo],
-                              data_dict: Dict[str, Any],
-                              search_cls: type = Base
-                              ) -> Tuple[Dict[str, Tuple[type, Ellipsis]], bool]:
-    """
-    Find descendants of search_cls in type_dict and data_dict
-    :param type_dict: dictionary with field names as keys and types as values
-    :param data_dict: dictionary with field names as keys and data as values
-    :param search_cls: type to search for
-    :return: tuple with dictionary with field names as keys and tuple with type and Ellipsis as values and bool whether
-             model has changed
-    """
-    fields_as_definitions = {}
-    changed = False
-
-    for field_name, field in type_dict.items():
-        if not contains_subclass_of(search_cls, field):
-            fields_as_definitions[field_name] = (field.annotation, Ellipsis)
-        else:
-            data = data_dict.get(field_name)
-            if data is not None:
-                fields_as_definitions[field_name] = (field.annotation, Ellipsis)
-            else:
-                optional_annotation = Optional[field.annotation]
-                fields_as_definitions[field_name] = (optional_annotation, Ellipsis)
-                changed = True
-
-    return fields_as_definitions, changed
+    if isinstance(data, DBRef):
+        yield data
+    elif isinstance(data, dict):
+        for value in data.values():
+            yield from get_refs_from_data(value)
+    elif isinstance(data, list):
+        for item in data:
+            yield from get_refs_from_data(item)

@@ -1,16 +1,9 @@
-import flask
 import unittest
 
 from bson import DBRef
 
 from pydantic_mongo import PydanticMongo
-from tests.config import TestConfig
-
-
-def create_app():
-    app = flask.Flask(__name__)
-    app.config.from_object(TestConfig)
-    return app
+from tests.helpers import create_app
 
 
 class BaseTest(unittest.TestCase):
