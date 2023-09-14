@@ -103,7 +103,6 @@ class BasePydanticMongoModel(Base):
             fields=["id", "collection", "database"],
             replace_callback=lambda x: DBRef(**x)
         )
-        print("_parse_db_refs (from init)")
         return cls._replace_refs_with_models(processed_data, unloaded=False)
 
     def _load_from_db(self, item: str):
@@ -275,7 +274,6 @@ class BasePydanticMongoModel(Base):
             dict or model
         """
         mongo_doc = dict(mongo_doc)
-        print("_process_mongo_doc")
         data_with_models = cls._replace_refs_with_models(mongo_doc)
         if data_with_models.get("_id"):
             data_with_models["_id"] = str(data_with_models["_id"])
