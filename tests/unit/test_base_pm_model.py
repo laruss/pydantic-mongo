@@ -69,6 +69,14 @@ class TestBasePydanticMongoModel(BaseTest):
         self.assertEqual(model.db_ref.id, "test")
         self.assertEqual(model.db_ref.collection, model.collection_name)
 
+    def test_parse_db_refs(self):
+        with patch(
+                "pydantic_mongo.base_pm_model.find_data_with_fields_in_data_and_replace",
+                return_value={"_id": "True"}) as mocked_method:
+            model = BasePydanticMongoModel()
+            model._parse_db_refs({"test": "test"})
+            self.assertEqual(({"test": "test"},), mocked_method.call_args[0])
+
     def test_load_from_db(self):
         with patch.object(BasePydanticMongoModel, '_get_by_filter', return_value=None):
             model = BasePydanticMongoModel()
@@ -146,6 +154,15 @@ class TestBasePydanticMongoModel(BaseTest):
         self.assertFalse(model.__is_loaded__)
         with self.assertRaises(ValueError):
             _ = model.name
+
+        with patch.object(TestModel, '_get_by_filter', return_value={"_id": ref.id, "name": "test"}):
+            model = TestModel._from_ref(ref, False)
+            self.assertEqual(model, {"_id": ref.id, "name": "test"})
+            TestModel._get_by_filter.assert_called_with({"_id": ref.id})
+
+        with patch.object(TestModel, '_get_by_filter', return_value=None):
+            with self.assertRaises(ValueError):
+                TestModel._from_ref(ref, False)
 
     def test_objects(self):
         find_was_called = False
@@ -232,7 +249,7 @@ class TestBasePydanticMongoModel(BaseTest):
         result = BPM._replace_refs_with_models({"test": db_ref})
         self.assertEqual({"test": _from_ref_mock.return_value}, result)
         BPM._get_type_by_collection.assert_called_with(db_ref.collection)
-        _from_ref_mock.assert_called_with(db_ref)
+        _from_ref_mock.assert_called_with(db_ref, True)
         # 3. mongo dict with ref and list of refs
         result = BPM._replace_refs_with_models({"test": [db_ref, db_ref]})
         self.assertEqual({"test": [_from_ref_mock.return_value, _from_ref_mock.return_value]}, result)

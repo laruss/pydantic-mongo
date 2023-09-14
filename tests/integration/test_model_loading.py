@@ -83,7 +83,7 @@ def test_loading_with_nested_models(mongo):
     assert nested_model.__is_loaded__ is False
     assert nested_model.age == 10
     assert nested_model.__is_loaded__ is True
-    assert test_model.nested_model.id == nested_model_id
+    assert nested_model.id == nested_model_id
 
 
 def test_loading_with_nested_models_list(mongo):

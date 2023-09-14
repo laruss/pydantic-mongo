@@ -118,6 +118,53 @@ class TestHelpers(BaseTestWithData):
         result = list(get_refs_from_data(complex_data))
         self.assertEqual([db_ref_a1, db_ref_c3, db_ref_d4, db_ref_b2, db_ref_d4], result)
 
+    def test_find_data_with_fields_in_data_and_replace(self):
+        def callback_fn(value):
+            return str(value)
+
+        data1 = {
+            "key1": 123,
+            "key2": "string",
+            "key3": 456
+        }
+
+        result1 = find_data_with_fields_in_data_and_replace(data1, ["key1", "key3"], callback_fn)
+        self.assertEqual(str(data1), result1)
+
+        data2 = {
+            "key": 123,
+            "key2": "string",
+            "key3": {
+                "key1": data1
+            }
+        }
+        final_data2 = {
+            "key": 123,
+            "key2": "string",
+            "key3": {
+                "key1": str(data1)
+            }
+        }
+
+        result2 = find_data_with_fields_in_data_and_replace(data2, ["key1", "key3"], callback_fn)
+        self.assertEqual(final_data2, result2)
+
+        data3 = {
+            "key": 123,
+            "key2": [
+                data1
+            ]
+        }
+        final_data3 = {
+            "key": 123,
+            "key2": [
+                str(data1)
+            ]
+        }
+
+        result3 = find_data_with_fields_in_data_and_replace(data3, ["key1", "key3"], callback_fn)
+        self.assertEqual(final_data3, result3)
+
 
 if __name__ == '__main__':
     unittest.main()

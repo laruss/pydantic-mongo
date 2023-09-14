@@ -4,7 +4,11 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.0
+0.1.1
+
+Changes:
+
+- get_with_parse_db_refs method added to PydanticMongoModel
 
 ## Project Structure
 ```
@@ -55,6 +59,16 @@ from pydantic_mongo import PydanticMongoModel as PmModel
 
 class YourModel(PmModel):
     ...
+```
+
+2.1. Model creation with DBRefs as dicts with "collection", "database" and "id" keys:
+
+```python
+class YourModel(PmModel):
+    nested_model: AnotherModel = AnotherModel()
+
+data = {"nested_model": {"collection": "another_models", "database": "", "id": "id"}}
+instance = YourModel.get_with_parse_db_refs(data)
 ```
 
 3. Data operations:
@@ -147,15 +161,15 @@ Name                              Stmts   Miss  Cover
 -----------------------------------------------------
 pydantic_mongo/__init__.py            2      0   100%
 pydantic_mongo/base.py               35      0   100%
-pydantic_mongo/base_pm_model.py     128      2    98%
+pydantic_mongo/base_pm_model.py     142      2    99%
 pydantic_mongo/db_ref_model.py       11      0   100%
 pydantic_mongo/extensions.py         28      1    96%
-pydantic_mongo/helpers.py            34      0   100%
+pydantic_mongo/helpers.py            45      0   100%
 pydantic_mongo/meta.py               45      0   100%
 pydantic_mongo/mongo_model.py        73      1    99%
-pydantic_mongo/pm_model.py           38      0   100%
+pydantic_mongo/pm_model.py           41      0   100%
 -----------------------------------------------------
-TOTAL                               394      4    99%
+TOTAL                               422      4    99%
 ```
 
 ## Contributing

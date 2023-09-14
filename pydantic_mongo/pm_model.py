@@ -21,17 +21,33 @@ class PydanticMongoModel(BasePydanticMongoModel):
         return cls.get_by_filter({"_id": _id})
 
     @classmethod
-    def from_ref(cls, ref: DBRef) -> PydanticMongoModel:
+    def from_ref(cls, ref: DBRef, unloaded: bool = True) -> PydanticMongoModel:
         """
         Get model from DBRef.
-        Model won't be loaded from db until you try to access its public attribute
+        The Model won't be loaded from db until you try to access its public attribute if unloaded is True.
+        Else model will be loaded from db immediately
+
         Args:
             ref: bson.DBRef(collection: str, id: str)
+            unloaded: if True, a model will be unloaded (by default), else it will be loaded from db
 
         Returns:
-            Model, created by `model_construct`
+            Model, created by pydantic `create_model`
         """
-        return cls._from_ref(ref)
+        return cls._from_ref(ref, unloaded)
+
+    @classmethod
+    def get_with_parse_db_refs(cls, data: dict) -> PydanticMongoModel:
+        """
+        Get model from dict if db_refs are presented as dict with three keys: id, collection, database
+
+        Args:
+            data: model data dict
+
+        Returns:
+            Model
+        """
+        return cls._get_with_parse_db_refs(data)
 
     @property
     def db_ref(self) -> DBRef:

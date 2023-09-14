@@ -184,8 +184,7 @@ def test_creation_with_nested_models(mongo):
         assert isinstance(e, ValueError)
 
     nested_model = NestedModel(age=10).save()
-    test_model = TestModel(nested_model=nested_model)
-    test_model.save()
+    test_model = TestModel(nested_model=nested_model).save()
 
     assert test_model.nested_model.age == 10
 
@@ -233,3 +232,31 @@ def test_creation_with_nested_models_as_dict(mongo):
 
     assert test_model.nested_models["a"].age == 10
     assert test_model.nested_models["b"].age == 20
+
+
+def test_creation_with_parse_db_refs(mongo):
+    class NestedModel(PMM):
+        age: int
+
+    class TestModel(PMM):
+        nested_model: NestedModel
+
+    nested_model = NestedModel(age=10).save()
+    nested_model_data = {"id": nested_model.id, "collection": nested_model.collection_name, "database": ""}
+    test_model = TestModel.get_with_parse_db_refs({"nested_model": nested_model_data}).save()
+
+    assert test_model.nested_model.age == 10
+
+
+def test_creation_with_nested_model_with_parse_db_refs_false(mongo):
+    class NestedModel(PMM):
+        age: int
+
+    class TestModel(PMM):
+        nested_model: NestedModel
+
+    nested_model = NestedModel(age=10).save()
+    nested_model_data = {"id": nested_model.id, "collection": nested_model.collection_name, "database": ""}
+
+    with pytest.raises(PydanticValidationError):
+        TestModel(nested_model=nested_model_data).save()

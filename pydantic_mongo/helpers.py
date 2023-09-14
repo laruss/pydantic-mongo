@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Callable, get_origin, Iterator, Union, Any
+from typing import Callable, get_origin, Iterator, Union, Any, Iterable
 
 from bson import DBRef
 
@@ -84,3 +84,29 @@ def get_refs_from_data(data: Union[dict, list, DBRef]) -> Iterator[DBRef]:
     elif isinstance(data, list):
         for item in data:
             yield from get_refs_from_data(item)
+
+
+def find_data_with_fields_in_data_and_replace(
+        data: dict, fields: Iterable, replace_callback: Callable[[Any], Any]) -> dict:
+    """
+    Find data with fields in data and replace them with callback
+
+    Args:
+        data: dict with data
+        fields: fields to find
+        replace_callback: function that takes type and returns type
+
+    Returns:
+        dict with replaced types
+    """
+    if all([field in data for field in fields]):
+        return replace_callback(data)
+    for key, value in data.items():
+        if isinstance(value, list):
+            for i, item in enumerate(value):
+                if isinstance(item, dict):
+                    data[key][i] = find_data_with_fields_in_data_and_replace(item, fields, replace_callback)
+        elif isinstance(value, dict):
+            data[key] = find_data_with_fields_in_data_and_replace(value, fields, replace_callback)
+
+    return data

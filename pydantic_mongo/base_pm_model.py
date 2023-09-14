@@ -10,7 +10,8 @@ from pydantic import ValidationError as PydanticValidationError, create_model
 
 from pydantic_mongo.base import __Base as Base
 from pydantic_mongo.db_ref_model import DbRefModel
-from pydantic_mongo.helpers import get_refs_from_data, find_instance_in_data_and_replace
+from pydantic_mongo.helpers import get_refs_from_data, find_instance_in_data_and_replace, \
+    find_data_with_fields_in_data_and_replace
 from pydantic_mongo.mongo_model import MongoModel
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,21 @@ class BasePydanticMongoModel(Base):
             return self._load_from_db(item)
         return attr
 
+    @classmethod
+    def _get_with_parse_db_refs(cls: Type[T], data: dict) -> T:
+        """
+        Get model from dict if db_refs are presented as dict with three keys: id, collection, database
+
+        Args:
+            data: model data dict
+
+        Returns:
+            Model
+        """
+        data = cls._parse_db_refs(data)
+
+        return cls(**data)
+
     @property
     def db_ref(self) -> DBRef:
         """
@@ -70,6 +86,25 @@ class BasePydanticMongoModel(Base):
         self.__db_ref__ = DBRef(collection=self.collection_name, id=self.id)
 
         return self.__db_ref__
+
+    @classmethod
+    def _parse_db_refs(cls, data: dict) -> dict:
+        """
+        Checks if there are dict with 3 keys: id, collection, database and replaces it with db_refs and then with models
+
+        Args:
+            data: model data dict
+
+        Returns:
+            dict with replaced db_refs as models
+        """
+        processed_data = find_data_with_fields_in_data_and_replace(
+            data,
+            fields=["id", "collection", "database"],
+            replace_callback=lambda x: DBRef(**x)
+        )
+        print("_parse_db_refs (from init)")
+        return cls._replace_refs_with_models(processed_data, unloaded=False)
 
     def _load_from_db(self, item: str):
         """
@@ -120,22 +155,29 @@ class BasePydanticMongoModel(Base):
         return self
 
     @classmethod
-    def _from_ref(cls: Type[T], ref: DBRef) -> T:
+    def _from_ref(cls: Type[T], ref: DBRef, unloaded: bool = True) -> T:
         """
         Get model from DBRef.
-        Model won't be loaded from db until you try to access its public attribute
+        The Model won't be loaded from db until you try to access its public attribute if unloaded is True.
+        Else model will be loaded from db immediately
 
         Args:
             ref: bson.DBRef(collection: str, id: str)
+            unloaded: if True, a model will be unloaded (by default), else it will be loaded from db
 
         Returns:
             Model, created by pydantic `create_model`
         """
-        model_fields_dict = dict(cls.model_fields.items())
-        model_dict = {field: (Optional[model_fields_dict[field].annotation], None) for field in model_fields_dict}
-        Model = create_model(cls.__name__, __base__=cls, **model_dict)
-        instance = Model(False, **{})
-        instance.__db_ref__ = ref
+        if unloaded:
+            model_fields_dict = dict(cls.model_fields.items())
+            model_dict = {field: (Optional[model_fields_dict[field].annotation], None) for field in model_fields_dict}
+            Model = create_model(cls.__name__, __base__=cls, **model_dict)
+            instance = Model(False, **{})
+            instance.__db_ref__ = ref
+        else:
+            instance = cls._get_by_filter({"_id": ref.id})
+            if instance is None:
+                raise ValueError(f"Can't get {cls.__name__} with id {ref.id}")
 
         return instance
 
@@ -193,21 +235,26 @@ class BasePydanticMongoModel(Base):
         return [self._get_type_by_collection(ref.collection)._from_ref(ref) for ref in get_refs_from_data(mongo_doc)]
 
     @classmethod
-    def _replace_refs_with_models(cls, mongo_doc: dict, model: typing.Literal['base', 'dict'] = 'base') -> dict:
+    def _replace_refs_with_models(cls,
+                                  mongo_doc: dict,
+                                  model: typing.Literal['base', 'dict'] = 'base',
+                                  unloaded: bool = True
+                                  ) -> dict:
         """
         Replace DBRef with model data or None if not found
 
         Args:
             mongo_doc: dict with raw data from mongo db_refs should be bson.DBRef(collection: str, id: str)
             model: 'base' or 'dict'; if 'dict', return dict with DbRefModel
+            unloaded: if True, models will be unloaded (by default), else they will be loaded from db
 
         Returns:
             dict with replaced refs
         """
         def replace(ref):
             if model == 'base':
-                instance = cls._get_type_by_collection(ref.collection)._from_ref(ref)
-                instance.__is_loaded__ = False
+                instance = cls._get_type_by_collection(ref.collection)._from_ref(ref, unloaded)
+                instance.__is_loaded__ = not unloaded
                 return instance
             else:
                 return DbRefModel(**ref.as_doc()).model_dump()
@@ -228,6 +275,7 @@ class BasePydanticMongoModel(Base):
             dict or model
         """
         mongo_doc = dict(mongo_doc)
+        print("_process_mongo_doc")
         data_with_models = cls._replace_refs_with_models(mongo_doc)
         if data_with_models.get("_id"):
             data_with_models["_id"] = str(data_with_models["_id"])
