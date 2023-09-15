@@ -140,7 +140,8 @@ class BasePydanticMongoModel(Base):
         Returns:
             PydanticMongoModel
         """
-        _ = self.id if not self.__is_loaded__ else None
+        # for loading from db if model is not loaded
+        self.__str__()
 
         data = self._MongoModel(**self.model_dump()).model_dump_db()
         collection = self.collection()
@@ -290,7 +291,8 @@ class BasePydanticMongoModel(Base):
         Returns:
             dict with model data
         """
-        _ = self.id if not self.__is_loaded__ else None
+        # for loading from db if model is not loaded
+        self.__str__()
         self_dict = super().model_dump(**kwargs)
         if as_mongo_model:
             return self._MongoModel(**self_dict).model_dump_db(convert_to_db=False)

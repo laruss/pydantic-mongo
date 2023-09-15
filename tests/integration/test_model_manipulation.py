@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+import pytest
 from bson import ObjectId
 
 from pydantic_mongo import PydanticMongoModel as PMM
@@ -103,7 +104,11 @@ def test_model_dump(mongo):
     assert test_model.model_dump(as_mongo_model=True) == model_dump
 
 
-def test_model_dump_with_nested_models(mongo):
+@pytest.mark.parametrize(
+    "load_from_db",
+    [True, False],
+)
+def test_model_dump_with_nested_models(mongo, load_from_db):
     class NestedModel(PMM):
         age: int
 
@@ -114,6 +119,10 @@ def test_model_dump_with_nested_models(mongo):
 
     nested_model = NestedModel(age=10).save()
     test_model = TestModel(name="test", age=20, nested_model=nested_model).save()
+
+    if load_from_db:
+        test_model = TestModel.get_by_id(test_model.id)
+        assert test_model.nested_model.__is_loaded__ is False
 
     assert test_model.model_dump() == {
         'id': test_model.id,
