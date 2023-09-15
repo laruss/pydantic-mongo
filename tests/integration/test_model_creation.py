@@ -244,6 +244,12 @@ def test_creation_with_parse_db_refs(mongo):
     nested_model = NestedModel(age=10).save()
     nested_model_data = {"id": nested_model.id, "collection": nested_model.collection_name, "database": ""}
     test_model = TestModel.get_with_parse_db_refs({"nested_model": nested_model_data}).save()
+    test_model = TestModel.get_by_id(test_model.id)
+    nested_model2 = NestedModel(age=12).save()
+    nested_model2_data = {"id": nested_model2.id, "collection": nested_model2.collection_name, "database": ""}
+    test_model2 = TestModel.get_with_parse_db_refs({"nested_model": nested_model2_data})
+    test_model2.id = test_model.id
+    test_model2.save()
 
     assert test_model.nested_model.age == 10
 

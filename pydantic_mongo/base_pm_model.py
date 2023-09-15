@@ -170,7 +170,9 @@ class BasePydanticMongoModel(Base):
         """
         if unloaded:
             model_fields_dict = dict(cls.model_fields.items())
-            model_dict = {field: (Optional[model_fields_dict[field].annotation], None) for field in model_fields_dict}
+            model_dict = {field: (value.annotation, value) for field, value in model_fields_dict.items()}
+            for field_value in model_dict.values():
+                field_value[1].default = None
             Model = create_model(cls.__name__, __base__=cls, **model_dict)
             instance = Model(False, **{})
             instance.__db_ref__ = ref
@@ -278,6 +280,7 @@ class BasePydanticMongoModel(Base):
         data_with_models = cls._replace_refs_with_models(mongo_doc)
         if data_with_models.get("_id"):
             data_with_models["_id"] = str(data_with_models["_id"])
+        print(cls.model_fields)
         return data_with_models if as_dict else cls(**data_with_models)
 
     def _model_dump(self, as_mongo_model: bool = False, **kwargs) -> dict[str, Any]:
