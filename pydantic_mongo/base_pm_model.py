@@ -280,7 +280,6 @@ class BasePydanticMongoModel(Base):
         data_with_models = cls._replace_refs_with_models(mongo_doc)
         if data_with_models.get("_id"):
             data_with_models["_id"] = str(data_with_models["_id"])
-        print(cls.model_fields)
         return data_with_models if as_dict else cls(**data_with_models)
 
     def _model_dump(self, as_mongo_model: bool = False, **kwargs) -> dict[str, Any]:
