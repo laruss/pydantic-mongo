@@ -91,17 +91,17 @@ class TestMongoModel(BaseTest):
         self.assertTrue(isinstance(fields, Callable))
         self.assertEqual(fields({"a": 1}), {"a": 1})
         self.assertEqual(
-            fields({"a": test_obj}), {'a': DbRefModel(collection='test_models', id=None, database=None)})
+            fields({"a": test_obj}), {'a': DbRefModel(collection='test_models', id=None, database="")})
 
         fields = MM._get_fields_validators_from_annotation(TestModel.model_fields["list_data"].annotation, DbRefModel)
         self.assertTrue(isinstance(fields, Callable))
         self.assertEqual(fields(["a", "b"]), ["a", "b"])
         self.assertEqual(
-            fields([test_obj]), [DbRefModel(collection='test_models', id=None, database=None)])
+            fields([test_obj]), [DbRefModel(collection='test_models', id=None, database="")])
 
         fields = MM._get_fields_validators_from_annotation(TestModel.model_fields["child"].annotation, DbRefModel)
         self.assertTrue(isinstance(fields, Callable))
-        self.assertEqual(fields(test_obj), DbRefModel(collection='test_models', id=None, database=None))
+        self.assertEqual(fields(test_obj), DbRefModel(collection='test_models', id=None, database=""))
 
     def test_convert_to_db_ref_if_needed(self):
         mm = MongoModel()

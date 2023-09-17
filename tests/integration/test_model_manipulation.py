@@ -140,7 +140,7 @@ def test_model_dump_with_nested_models(mongo, load_from_db):
         'age': 20,
         'nested_model': {
             'collection': 'nested_models',
-            'database': None,
+            'database': "",
             'id': nested_model.id,
         }
     }
