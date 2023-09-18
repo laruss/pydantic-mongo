@@ -146,6 +146,30 @@ def test_model_dump_with_nested_models(mongo, load_from_db):
     }
 
 
+def test_model_dump_with_nested_models_deleted(mongo):
+    class NestedModel(PMM):
+        age: int
+
+    class TestModel(PMM):
+        name: str
+        age: Optional[int]
+        nested_model: NestedModel
+
+    nested_model = NestedModel(age=10).save()
+    test_model = TestModel(name="test", age=20, nested_model=nested_model).save()
+    nested_model.delete()
+
+    test_model = TestModel.get_by_id(test_model.id)
+    _ = test_model.nested_model
+
+    assert test_model.model_dump() == {
+        'id': test_model.id,
+        'name': 'test',
+        'age': 20,
+        'nested_model': {'age': None, 'id': None}
+    }
+
+
 def test_model_json_schema(mongo):
     class TestModel(PMM):
         name: str

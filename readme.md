@@ -4,11 +4,11 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.1
+0.1.2
 
 Changes:
 
-- get_with_parse_db_refs method added to PydanticMongoModel
+- now when the nested data is deleted from DB and the main object tries to access it, it will be set to NestedModel with None values 
 
 ## Project Structure
 ```

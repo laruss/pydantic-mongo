@@ -120,7 +120,10 @@ class BasePydanticMongoModel(Base):
         logger.debug(f"Loading {self.__class__.__name__} from db with {item}")
         data: Optional[dict] = self._get_by_filter({"_id": self.db_ref.id}, as_dict=True)
         if data is None:
-            raise ValueError(f"Can't load {self.__class__.__name__} from db. Check if it is saved")
+            logger.warning(f"Can't load {self.__class__.__name__} from db. Check if it is saved")
+            self.__dict__ = self.__class__.model_construct().__dict__
+            self.__is_loaded__ = True
+            return getattr(self, item)
         if data.get("_id"):
             data["id"] = data.pop("_id")
         try:

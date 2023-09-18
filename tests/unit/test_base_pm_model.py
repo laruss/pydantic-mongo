@@ -152,8 +152,8 @@ class TestBasePydanticMongoModel(BaseTest):
 
         self.assertEqual(ref, model.__db_ref__)
         self.assertFalse(model.__is_loaded__)
-        with self.assertRaises(ValueError):
-            _ = model.name
+        self.assertEqual(model.id, None)
+        self.assertTrue(model.__is_loaded__)
 
         with patch.object(TestModel, '_get_by_filter', return_value={"_id": ref.id, "name": "test"}):
             model = TestModel._from_ref(ref, False)
