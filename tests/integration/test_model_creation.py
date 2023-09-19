@@ -1,6 +1,6 @@
 import datetime
 from types import NoneType
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional, Union, ForwardRef
 
 import pytest
 from pydantic import PydanticUserError, ValidationError as PydanticValidationError
@@ -266,3 +266,26 @@ def test_creation_with_nested_model_with_parse_db_refs_false(mongo):
 
     with pytest.raises(PydanticValidationError):
         TestModel(nested_model=nested_model_data).save()
+
+
+def test_forward_refs(mongo):
+    class TestModel(PMM):
+        nested_model: ForwardRef("NestedModel")
+        list_of_nested_models: List[ForwardRef("NestedModel")]
+        dict_of_nested_models: Dict[str, ForwardRef("NestedModel")]
+
+    class NestedModel(PMM):
+        age: int
+
+    TestModel.model_rebuild()
+
+    nested_model = NestedModel(age=10).save()
+    test_model = TestModel(nested_model=nested_model, list_of_nested_models=[nested_model],
+                           dict_of_nested_models={"a": nested_model}).save()
+
+    assert test_model.nested_model.age == 10
+
+    test_model.nested_model.age = 20
+    test_model.save()
+
+    assert test_model.nested_model.age == 20

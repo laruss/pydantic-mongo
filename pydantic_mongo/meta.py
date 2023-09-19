@@ -9,7 +9,8 @@ from pydantic_mongo.extensions import ValidationError
 from pydantic_mongo.helpers import replace_word
 
 supported_types = [
-    int, str, float, bool, list, dict, tuple, List, Tuple, NoneType, Dict, Optional, Union, datetime.date, UnionType
+    int, str, float, bool, list, dict, tuple, List, Tuple, NoneType, Dict, Optional, Union, datetime.date, UnionType,
+    ForwardRef
 ]
 module_types = ['__Base', 'BasePydanticMongoModel']
 T = TypeVar('T')
@@ -57,6 +58,7 @@ class BaseMeta(type(BaseModel)):
                 raise_error = True
 
             if raise_error:
+                print(field_type, type(field_type))
                 raise ValidationError(f"Type {field_type} of field {field_name} is not supported. \n\nSupported types: "
                                       f"{supported_types}")
 
@@ -75,6 +77,8 @@ class BaseMeta(type(BaseModel)):
         if hasattr(t, "__origin__"):
             return all(cls.check_type_recursive(arg, available_types) for arg in t.__args__)
         else:
+            if type(t) == ForwardRef:
+                return True
             if t not in available_types:
                 return inspect.isclass(t) and isinstance(t, BaseMeta)
             return True

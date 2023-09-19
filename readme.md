@@ -4,11 +4,11 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.2
+0.1.3
 
 Changes:
 
-- now when the nested data is deleted from DB and the main object tries to access it, it will be set to NestedModel with None values 
+- added ForwardRef support 
 
 ## Project Structure
 ```
@@ -69,6 +69,28 @@ class YourModel(PmModel):
 
 data = {"nested_model": {"collection": "another_models", "database": "", "id": "id"}}
 instance = YourModel.get_with_parse_db_refs(data)
+```
+
+2.2. Model creation with forward references:
+
+```python
+from __future__ import annotations
+from typing import ForwardRef
+
+class YourModel(PmModel):
+    nested_model: ForwardRef("AnotherModel") = AnotherModel()
+    nested_model_list: List[ForwardRef("AnotherModel")] = [AnotherModel()]
+    nested_model_dict: Dict[str, ForwardRef("AnotherModel")] = {"key": AnotherModel()}
+
+class AnotherModel(PmModel):
+    name: str
+    
+YourModel.model_rebuild()
+
+another_model = AnotherModel(name="name").save()
+data = {"nested_model": another_model, "nested_model_list": [another_model]}
+instance = YourModel(**data).save()
+
 ```
 
 3. Data operations:
