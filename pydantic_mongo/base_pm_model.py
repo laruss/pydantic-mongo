@@ -124,8 +124,6 @@ class BasePydanticMongoModel(Base):
             self.__dict__ = self.__class__.model_construct().__dict__
             self.__is_loaded__ = True
             return getattr(self, item)
-        if data.get("_id"):
-            data["id"] = data.pop("_id")
         try:
             self.__dict__ = dict(self.__class__.__dict__)
             self.__init__(**data)
