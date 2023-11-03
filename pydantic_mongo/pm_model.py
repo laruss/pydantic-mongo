@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from bson import ObjectId, DBRef
-from typing import Optional, Union, Any, Iterator, Dict, List
+from typing import Optional, Union, Any, Iterator, Dict, List, TypeVar, Type
 
 from pydantic_mongo.base_pm_model import BasePydanticMongoModel
+
+T = TypeVar("T", bound="PydanticMongoModel")
 
 
 class PydanticMongoModel(BasePydanticMongoModel):
     @classmethod
-    def get_by_id(cls, _id: Union[str, ObjectId]) -> Optional[PydanticMongoModel]:
+    def get_by_id(cls: Type[T], _id: Union[str, ObjectId]) -> Optional[T]:
         """
         Get model by id from database
 
@@ -21,7 +23,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
         return cls.get_by_filter({"_id": _id})
 
     @classmethod
-    def from_ref(cls, ref: DBRef, unloaded: bool = True) -> PydanticMongoModel:
+    def from_ref(cls: Type[T], ref: DBRef, unloaded: bool = True) -> T:
         """
         Get model from DBRef.
         The Model won't be loaded from db until you try to access its public attribute if unloaded is True.
@@ -37,7 +39,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
         return cls._from_ref(ref, unloaded)
 
     @classmethod
-    def get_with_parse_db_refs(cls, data: dict) -> PydanticMongoModel:
+    def get_with_parse_db_refs(cls: Type[T], data: dict) -> T:
         """
         Get model from dict if db_refs are presented as dict with three keys: id, collection, database
 
@@ -60,7 +62,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
         return super().db_ref
 
     @classmethod
-    def get_by_filter(cls, filter: Dict[str, Any]) -> Optional[PydanticMongoModel]:
+    def get_by_filter(cls: Type[T], filter: Dict[str, Any]) -> Optional[T]:
         """
         Get model by filter from database
         Args:
@@ -71,7 +73,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
         """
         return cls._get_by_filter(filter)
 
-    def get_ref_objects(self) -> Optional[List[Optional[PydanticMongoModel]]]:
+    def get_ref_objects(self: T) -> Optional[List[Optional[T]]]:
         """
         Get all ref objects from a model.
 
@@ -87,7 +89,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
 
         return self._get_ref_objects(dict(mongo_doc))
 
-    def save(self) -> PydanticMongoModel:
+    def save(self: T) -> T:
         """
         Save model to database
 
@@ -108,7 +110,7 @@ class PydanticMongoModel(BasePydanticMongoModel):
             self.collection().delete_one({"_id": obj_id})
 
     @classmethod
-    def objects(cls, filter: Optional[Dict[str, Any]] = None) -> Iterator[PydanticMongoModel]:
+    def objects(cls: Type[T], filter: Optional[Dict[str, Any]] = None) -> Iterator[T]:
         """
         Get all models from database
         Args:

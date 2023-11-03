@@ -4,11 +4,12 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.3
+0.1.4
 
 Changes:
 
-- added ForwardRef support 
+- update requirements versions
+- add support for mongo indexes
 
 ## Project Structure
 ```
@@ -90,6 +91,28 @@ YourModel.model_rebuild()
 another_model = AnotherModel(name="name").save()
 data = {"nested_model": another_model, "nested_model_list": [another_model]}
 instance = YourModel(**data).save()
+
+```
+
+2.3 Model creation with field indexing:
+
+```python
+from pydantic_mongo import PydanticMongoModel as PmModel
+from pymongo import IndexModel
+
+class YourModel(PmModel):
+    name: str
+    age: int
+
+    class _MongoConfig:
+        indexes = [
+            IndexModel([("name", 1)]),
+            IndexModel([("age", 1)], unique=True)
+        ]
+        
+YourModel(name="name", age=1).save()
+YourModel(name="name", age=2).save()  # will raise PyMongoError
+YourModel(name="name2", age=1).save() # will raise PyMongoError
 
 ```
 
@@ -182,16 +205,16 @@ Made with [pytest-cov](https://pypi.org/project/pytest-cov/)
 Name                              Stmts   Miss  Cover
 -----------------------------------------------------
 pydantic_mongo/__init__.py            2      0   100%
-pydantic_mongo/base.py               35      0   100%
-pydantic_mongo/base_pm_model.py     142      2    99%
+pydantic_mongo/base.py               63      2    97%
+pydantic_mongo/base_pm_model.py     145      2    99%
 pydantic_mongo/db_ref_model.py       11      0   100%
 pydantic_mongo/extensions.py         28      1    96%
 pydantic_mongo/helpers.py            45      0   100%
-pydantic_mongo/meta.py               45      0   100%
+pydantic_mongo/meta.py               57      3    95%
 pydantic_mongo/mongo_model.py        73      1    99%
-pydantic_mongo/pm_model.py           41      0   100%
+pydantic_mongo/pm_model.py           42      0   100%
 -----------------------------------------------------
-TOTAL                               422      4    99%
+TOTAL                               466      9    98%
 ```
 
 ## Contributing

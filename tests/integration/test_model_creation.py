@@ -4,6 +4,8 @@ from typing import List, Dict, Tuple, Optional, Union, ForwardRef
 
 import pytest
 from pydantic import PydanticUserError, ValidationError as PydanticValidationError
+from pymongo import IndexModel
+from pymongo.errors import PyMongoError
 
 from pydantic_mongo import PydanticMongoModel as PMM
 from pydantic_mongo.extensions import ValidationError
@@ -289,3 +291,16 @@ def test_forward_refs(mongo):
     test_model.save()
 
     assert test_model.nested_model.age == 20
+
+
+def test_creation_with_mongo_config_indexes(mongo):
+    class TestModel(PMM):
+        age: int
+
+        class _MongoConfig:
+            indexes = [IndexModel([("age", 1)], unique=True)]
+
+    TestModel(age=10).save()
+
+    with pytest.raises(PyMongoError):
+        TestModel(age=10).save()

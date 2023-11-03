@@ -129,8 +129,8 @@ class BasePydanticMongoModel(Base):
         try:
             self.__dict__ = dict(self.__class__.__dict__)
             self.__init__(**data)
-        except PydanticValidationError:
-            logger.warning(f"Failed to load {self.__class__.__name__} from db")
+        except PydanticValidationError as e:
+            logger.warning(f"Failed to load {self.__class__.__name__} from db with {item}: {e}")
             self.__dict__ = self.__class__.model_construct(**data).__dict__
 
         self.__is_loaded__ = True
