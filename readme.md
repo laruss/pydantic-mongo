@@ -4,11 +4,12 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.3
+0.1.4
 
 Changes:
 
-- added ForwardRef support 
+- update requirements versions
+- add support for mongo indexes
 
 ## Project Structure
 ```
@@ -90,6 +91,28 @@ YourModel.model_rebuild()
 another_model = AnotherModel(name="name").save()
 data = {"nested_model": another_model, "nested_model_list": [another_model]}
 instance = YourModel(**data).save()
+
+```
+
+2.3 Model creation with field indexing:
+
+```python
+from pydantic_mongo import PydanticMongoModel as PmModel
+from pymongo import IndexModel
+
+class YourModel(PmModel):
+    name: str
+    age: int
+
+    class _MongoConfig:
+        indexes = [
+            IndexModel([("name", 1)]),
+            IndexModel([("age", 1)], unique=True)
+        ]
+        
+YourModel(name="name", age=1).save()
+YourModel(name="name", age=2).save()  # will raise PyMongoError
+YourModel(name="name2", age=1).save() # will raise PyMongoError
 
 ```
 

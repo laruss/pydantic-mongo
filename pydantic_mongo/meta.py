@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import logging
 from types import NoneType, UnionType
 from typing import *
 
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 
 from pydantic_mongo.extensions import ValidationError
 from pydantic_mongo.helpers import replace_word
+
+logger = logging.getLogger(__name__)
 
 supported_types = [
     int, str, float, bool, list, dict, tuple, List, Tuple, NoneType, Dict, Optional, Union, datetime.date, UnionType,
@@ -74,11 +77,15 @@ class BaseMeta(type(BaseModel)):
         Returns:
             True if supported, False otherwise
         """
-        if hasattr(t, "__origin__"):
-            return all(cls.check_type_recursive(arg, available_types) for arg in t.__args__)
-        else:
-            if type(t) == ForwardRef:
+        try:
+            if hasattr(t, "__origin__"):
+                return all(cls.check_type_recursive(arg, available_types) for arg in t.__args__)
+            else:
+                if type(t) == ForwardRef:
+                    return True
+                if t not in available_types:
+                    return inspect.isclass(t) and isinstance(t, BaseMeta)
                 return True
-            if t not in available_types:
-                return inspect.isclass(t) and isinstance(t, BaseMeta)
-            return True
+        except Exception as e:
+            logger.error(f"Error while checking type {t}: {e}")
+            return False
