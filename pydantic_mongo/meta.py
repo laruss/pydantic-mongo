@@ -46,11 +46,13 @@ class BaseMeta(type(BaseModel)):
             None
         """
         raise_error = False
+        is_string = False
         for field_name, field_type in annotations.items():
             if field_name.startswith("_"):
                 continue
 
             if isinstance(field_type, str):
+                is_string = True
                 for inst in cls.instances:
                     field_type = replace_word(field_type, inst, "type(None)")
             try:
@@ -61,9 +63,16 @@ class BaseMeta(type(BaseModel)):
                 raise_error = True
 
             if raise_error:
-                print(field_type, type(field_type))
-                raise ValidationError(f"Type {field_type} of field {field_name} is not supported. \n\nSupported types: "
-                                      f"{supported_types}")
+                if is_string:
+                    raise ValidationError(
+                        f"Seems like you have a string type in your annotations (\"{field_type}\"). "
+                        f"Please, consider using `typing.ForwardRef[\"{field_type}\"]` annotation and `YourClass"
+                        f".model_rebuild()` method in the end of your file."
+                    )
+                raise ValidationError(
+                    f"Type \"{field_type}\" of field \"{field_name}\" is not supported.\n"
+                    f"Use models, inherited from \"pydantic_mongo.PydanticMongoModel\" or "
+                    f"supported types: {supported_types}")
 
     @classmethod
     def check_type_recursive(cls, t: type, available_types: List[type]) -> bool:
