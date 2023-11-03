@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 supported_types = [
     int, str, float, bool, list, dict, tuple, List, Tuple, NoneType, Dict, Optional, Union, datetime.date, UnionType,
-    ForwardRef
+    ForwardRef, Literal
 ]
 module_types = ['__Base', 'BasePydanticMongoModel']
 T = TypeVar('T')
