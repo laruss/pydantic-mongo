@@ -90,7 +90,6 @@ class BaseMeta(type(BaseModel)):
             if hasattr(t, "__origin__"):
                 if t.__origin__ is Literal:
                     return all(isinstance(arg, (int, str, bool)) for arg in t.__args__)
-                print("\n", t.__origin__, t.__args__, type(t.__origin__))
                 return all(cls.check_type_recursive(arg, available_types) for arg in t.__args__)
             else:
                 if type(t) == ForwardRef:

@@ -74,7 +74,6 @@ class TestBaseModel(BaseTest):
         with patch('pydantic_mongo.base.PydanticMongo') as mock_pydanticmongo, \
                 patch('pydantic_mongo.base.__Base._MongoConfig') as mock_mongo_config:
             mock_pydanticmongo.return_value.db.__getitem__.return_value.list_indexes.return_value = []
-            print(f"{Base=}")
             mock_mongo_config.indexes = [mock.Mock()]
             with self.assertRaises(TypeError):
                 Base._init_indexes()
