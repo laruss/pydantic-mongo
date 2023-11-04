@@ -1,6 +1,6 @@
 import datetime
 from types import NoneType
-from typing import List, Dict, Tuple, Optional, Union, ForwardRef
+from typing import List, Dict, Tuple, Optional, Union, ForwardRef, Literal
 
 import pytest
 from pydantic import PydanticUserError, ValidationError as PydanticValidationError
@@ -171,6 +171,24 @@ def test_creation_with_unsupported_types(mongo, attributes, annotations):
         type("TestModel", (PMM,), attributes)
     except Exception as e:
         assert isinstance(e, ValidationError)
+
+
+def test_creation_with_literal(mongo):
+    class TestModel(PMM):
+        literal_: Literal[1, 2, 3]
+        literal_2: Literal["a", "b", "c"]
+        dict_literal: Dict[Literal["a", "b", "c"], int]
+        bool_literal: Literal[True]
+
+    test_model = TestModel(literal_=1, literal_2="a", dict_literal={"a": 1, "b": 2}, bool_literal=True)
+    test_model.save()
+
+    assert test_model.literal_ == 1
+
+    test_model.literal_ = 2
+    test_model.save()
+
+    assert test_model.literal_ == 2
 
 
 def test_creation_with_nested_models(mongo):

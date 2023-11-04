@@ -46,7 +46,10 @@ class MongoModel(BaseModel):
         Returns:
             dict with field name as key and tuple with type and default value as value
         """
-        callback = lambda x: replacing_type.from_model(x) if issubclass(x, replaceable_type) else x
+        def callback(x):
+            if not isinstance(x, (str, int, bool)) and issubclass(x, replaceable_type):
+                return replacing_type.from_model(x)
+            return x
         new_type = change_subtypes(annotation, callback)
 
         return {field: (new_type, ...)}
