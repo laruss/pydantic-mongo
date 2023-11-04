@@ -4,13 +4,14 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 ## Version
 
-0.1.4.1
+0.1.4.2
 
 Changes:
 
 - updated requirements versions
 - added support for mongo indexes
 - added support for a Literal type 
+- some fixes
 
 ## Project Structure
 ```
