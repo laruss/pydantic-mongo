@@ -8,8 +8,9 @@ PydanticMongo is an ODM (Object-Document Mapper) for MongoDB, built upon the fou
 
 Changes:
 
-- update requirements versions
-- add support for mongo indexes
+- updated requirements versions
+- added support for mongo indexes
+- added support for a Literal type
 - some other minor fixes
 
 ## Project Structure

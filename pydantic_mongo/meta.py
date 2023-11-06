@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 supported_types = [
     int, str, float, bool, list, dict, tuple, List, Tuple, NoneType, Dict, Optional, Union, datetime.date, UnionType,
-    ForwardRef
+    ForwardRef, Literal
 ]
 module_types = ['__Base', 'BasePydanticMongoModel']
 T = TypeVar('T')
@@ -88,6 +88,8 @@ class BaseMeta(type(BaseModel)):
         """
         try:
             if hasattr(t, "__origin__"):
+                if t.__origin__ is Literal:
+                    return all(isinstance(arg, (int, str, bool)) for arg in t.__args__)
                 return all(cls.check_type_recursive(arg, available_types) for arg in t.__args__)
             else:
                 if type(t) == ForwardRef:
